@@ -1,0 +1,25 @@
+spring:
+  application:
+    name: comments-service
+  cloud:
+    config:
+      discovery:
+        enabled: true
+        service-id: config-service
+
+
+eureka:
+  client:
+    service-url:
+      #      defaultZone: http://${HOST_IP}:8761/eureka
+      defaultZone: http://localhost:8761/eureka
+    register-with-eureka: true
+    fetch-registry: true
+  instance:
+    leaseRenewalIntervalInSeconds: 10
+    health-check-url: http://host.docker.internal:9007/actuator/health
+    ip-address: 192.168.56.1
+    prefer-ip-address: true
+#    hostname: host.docker.internal
+
+
