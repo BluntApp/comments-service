@@ -28,6 +28,7 @@ public class Comments {
   private ObjectId replyToId;
   @JsonSerialize(using = ObjectIdSerializer.class)
   private ObjectId replyToCommentId;
+  private String posterName;
   private String comments;
   @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
   private LocalDateTime commentedOn;

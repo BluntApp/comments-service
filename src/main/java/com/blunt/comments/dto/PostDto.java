@@ -12,4 +12,5 @@ public class PostDto {
   @JsonSerialize(using = ObjectIdSerializer.class)
   private ObjectId contentId;
   private boolean isCommentPublic;
+  private String posterName;
 }

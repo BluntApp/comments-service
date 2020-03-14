@@ -10,6 +10,7 @@ import com.blunt.comments.repository.CommentsRepository;
 import com.blunt.comments.util.BluntConstant;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -36,13 +37,14 @@ public class CommentsService {
     commentsDto.setCommenterId(new ObjectId(bluntId));
     commentsDto.setPosterId(postDto.getPosterId());
     commentsDto.setPostRefId(postDto.getContentId());
+    commentsDto.setPosterName(postDto.getPosterName());
     Comments comments = commentsMapper.commentsDtoToComments(commentsDto);
     commentsRepository.save(comments);
     return new ResponseEntity<>(commentsMapper.commentsToCommentsDto(comments), HttpStatus.OK);
   }
 
   private void validateReply(String bluntId, CommentsDto commentsDto, PostDto postDto) {
-    if(!bluntId.equals(postDto.getPosterId().toString()) &&
+    if(!bluntId.equals(postDto.getPosterId().toString()) && commentsDto.getReplyToId()!=null &&
         !commentsDto.getReplyToId().equals(postDto.getPosterId())){
         throw new BluntException(BluntConstant.NOT_AUTHORIZE_TO_COMMENTS,
             HttpStatus.UNAUTHORIZED.value(),
@@ -53,13 +55,9 @@ public class CommentsService {
   public ResponseEntity<Object> getComments(String bluntId, String postId) {
     PostDto postDto = validatePost(bluntId, postId);
     List<CommentsDto> commentsDtoList = new ArrayList<>();
-    if(bluntId.equals(postDto.getPosterId().toString())){
+    if(bluntId.equals(postDto.getPosterId().toString()) || postDto.isCommentPublic()){
       List<Comments> commentsList = commentsRepository.findAllByPostRefId(postDto.getContentId());
-      filterPublicCommentersId(commentsList, bluntId);
-      commentsDtoList = commentsMapper.commentsListToCommentsDtoList(commentsList);
-    } else if(postDto.isCommentPublic()){
-      List<Comments> commentsList = commentsRepository.findAllByPostRefId(postDto.getContentId());
-      filterPublicCommentersId(commentsList, bluntId);
+      filterComments(commentsList, new ObjectId(bluntId));
       commentsDtoList = commentsMapper.commentsListToCommentsDtoList(commentsList);
     } else{
       List<Comments> commentsByPoster = commentsRepository
@@ -70,16 +68,24 @@ public class CommentsService {
       commentsByBlunt.addAll(commentsByPoster);
       commentsDtoList = commentsMapper.commentsListToCommentsDtoList(commentsByBlunt);
     }
+    commentsDtoList.sort(new Comparator<CommentsDto>() {
+      @Override
+      public int compare(CommentsDto o1, CommentsDto o2) {
+        return o2.getCommentedOn().compareTo(o1.getCommentedOn());
+      }
+    });
     return new ResponseEntity<>(commentsDtoList, HttpStatus.OK);
   }
 
-  private void filterPublicCommentersId(List<Comments> commentsList, String bluntId) {
-    commentsList.parallelStream().map(comments -> {
-      if(!comments.getCommenterId().equals(new ObjectId(bluntId))){
+  private void filterComments(List<Comments> commentsList, ObjectId bluntId) {
+    for(Comments comments: commentsList) {
+      boolean myPostNotMyComment = bluntId.equals(comments.getPosterId()) && !(bluntId.equals(comments.getCommenterId())) ;
+      boolean notMyPostAndNotMyComment = !bluntId.equals(comments.getPosterId()) && !bluntId.equals(comments.getCommenterId());
+      boolean isPosterComment = comments.getPosterId().equals(comments.getCommenterId());
+      if(myPostNotMyComment || (!isPosterComment && notMyPostAndNotMyComment) ){
         comments.setCommenterId(null);
       }
-      return comments;
-    });
+    }
   }
 
   private PostDto validatePost(String bluntId, String postId) {
@@ -94,6 +100,7 @@ public class CommentsService {
     postDto.setCommentPublic((Boolean) postDtoMap.get("commentPublic"));
     postDto.setContentId(new ObjectId((String) postDtoMap.get("contentId")));
     postDto.setPosterId(new ObjectId((String) postDtoMap.get("posterId")));
+    postDto.setPosterName((String) postDtoMap.get("posterName"));
     return postDto;
   }
 

@@ -7,8 +7,6 @@ import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public interface CommentsRepository extends MongoRepository<Comments, ObjectId> {
-  List<Comments> findAllByPostRefId(ObjectId postRefId);
-  List<Comments> findAllByPosterIdAndPostRefIdAndReplyToId(ObjectId posterId, ObjectId postRefId, ObjectId replyToId);
+public interface CommentsRepository extends MongoRepository<Comments, ObjectId>, CommentsCustomRepository{
   List<Comments> findAllByPostRefIdAndCommenterId(ObjectId postRefId, ObjectId commenterId);
 }
