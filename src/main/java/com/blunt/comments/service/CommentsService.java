@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.bson.types.ObjectId;
@@ -20,6 +21,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.util.ObjectUtils;
+import org.springframework.util.StringUtils;
 
 @Service
 @Slf4j
@@ -39,16 +41,26 @@ public class CommentsService {
     commentsDto.setPostRefId(postDto.getContentId());
     commentsDto.setPosterName(postDto.getPosterName());
     Comments comments = commentsMapper.commentsDtoToComments(commentsDto);
+    if(Objects.nonNull(commentsDto.getReplyToCommentId())){
+      comments.setReplyToId(getReplyToId(commentsDto.getReplyToCommentId()));
+    }
     commentsRepository.save(comments);
     return new ResponseEntity<>(commentsMapper.commentsToCommentsDto(comments), HttpStatus.OK);
   }
 
+  private ObjectId getReplyToId(ObjectId replyToCommentId) {
+    Comments comments = commentsRepository.findCommentsById(replyToCommentId);
+    return comments.getCommenterId();
+  }
+
   private void validateReply(String bluntId, CommentsDto commentsDto, PostDto postDto) {
-    if(!bluntId.equals(postDto.getPosterId().toString()) && commentsDto.getReplyToId()!=null &&
-        !commentsDto.getReplyToId().equals(postDto.getPosterId())){
+    if(!bluntId.equals(postDto.getPosterId().toString()) && (Objects.nonNull(commentsDto.getReplyToCommentId()))){
+      Comments comments = commentsRepository.findCommentsById(commentsDto.getReplyToCommentId());
+      if(!bluntId.equals(comments.getCommenterId().toString())){
         throw new BluntException(BluntConstant.NOT_AUTHORIZE_TO_COMMENTS,
             HttpStatus.UNAUTHORIZED.value(),
             HttpStatus.UNAUTHORIZED);
+      }
     }
   }
 

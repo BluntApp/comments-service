@@ -22,8 +22,6 @@ public class CommentsDto {
   @JsonSerialize(using = ObjectIdSerializer.class)
   private ObjectId commenterId;
   @JsonSerialize(using = ObjectIdSerializer.class)
-  private ObjectId replyToId;
-  @JsonSerialize(using = ObjectIdSerializer.class)
   private ObjectId replyToCommentId;
   private String comments;
   private String posterName;
