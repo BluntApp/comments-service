@@ -21,7 +21,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.util.ObjectUtils;
-import org.springframework.util.StringUtils;
 
 @Service
 @Slf4j
@@ -56,7 +55,7 @@ public class CommentsService {
   private void validateReply(String bluntId, CommentsDto commentsDto, PostDto postDto) {
     if(!bluntId.equals(postDto.getPosterId().toString()) && (Objects.nonNull(commentsDto.getReplyToCommentId()))){
       Comments comments = commentsRepository.findCommentsById(commentsDto.getReplyToCommentId());
-      if(!bluntId.equals(comments.getCommenterId().toString())){
+      if(!bluntId.equals(comments.getCommenterId().toString()) && !comments.getPosterId().equals(comments.getCommenterId())){
         throw new BluntException(BluntConstant.NOT_AUTHORIZE_TO_COMMENTS,
             HttpStatus.UNAUTHORIZED.value(),
             HttpStatus.UNAUTHORIZED);
@@ -118,6 +117,28 @@ public class CommentsService {
 
   private ResponseEntity<Object> getPostDetails(String bluntId, String postId) {
     return publishServiceProxyClient.getPost(bluntId, postId);
+  }
+
+  public ResponseEntity<String> getReplyToComments(String bluntId, CommentsDto commentsDto) {
+    if(!validateViewer(bluntId, commentsDto.getPostId().toString())){
+      throw new BluntException(BluntConstant.NOT_AUTHORIZE_TO_COMMENTS,
+          HttpStatus.UNAUTHORIZED.value(),
+          HttpStatus.UNAUTHORIZED);
+    }
+    return new ResponseEntity<>(commentsRepository.findCommentsById(commentsDto.getReplyToCommentId()).getComments(),HttpStatus.OK) ;
+  }
+
+  private boolean validateViewer(String bluntId, String postId) {
+    List<LinkedHashMap<String,String>> viewersIdList = (List<LinkedHashMap<String,String>>)publishServiceProxyClient.getViewers(bluntId, postId).getBody();
+    if(Objects.isNull(viewersIdList)){
+      return false;
+    }
+    for(LinkedHashMap<String,String> viewersMap: viewersIdList){
+      if(viewersMap.get("viewerId").equals(bluntId)){
+        return true;
+      }
+    }
+    return false;
   }
 }
 

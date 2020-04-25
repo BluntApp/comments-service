@@ -38,5 +38,12 @@ public class CommentsController {
     return commentsService.getComments(bluntId, postId);
   }
 
+  @PostMapping("replies")
+  public ResponseEntity<String> getComments(
+      @RequestHeader(name = "BLUNT-ID", required = true) String bluntId,
+      @RequestBody CommentsDto commentsDto){
+    return commentsService.getReplyToComments(bluntId, commentsDto);
+  }
+
 
 }

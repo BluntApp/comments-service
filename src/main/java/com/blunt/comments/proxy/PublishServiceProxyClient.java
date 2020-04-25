@@ -18,4 +18,9 @@ public interface PublishServiceProxyClient {
       @RequestHeader(name = "BLUNT-ID", required = true) String bluntId,
       @PathVariable String contentId) ;
 
+  @GetMapping("/api/v1/publish/viewers/{postId}")
+  public ResponseEntity<Object> getViewers(
+      @RequestHeader(name = "BLUNT-ID", required = true) String bluntId,
+      @PathVariable String postId) ;
+
 }
